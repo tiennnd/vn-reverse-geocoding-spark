@@ -10,6 +10,37 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-03-vn-reverse-geocoding-spark-design.md`
 
+## Trạng thái thực thi (cập nhật 03/09/2026)
+
+| Task | Trạng thái | Ghi chú |
+|---|---|---|
+| 1 | ⚠️ Chặn một phần | Script và biểu mẫu đã có. Phần chạy `spark-submit` cần cụm thật và đội hạ tầng. `docs/environment.md` đang ghi CHƯA XÁC MINH |
+| 2–7 | ✅ Xong | 30 test đạt. Đã dựng thật trên `v5.0.0`: 3321 xã, 34 tỉnh, 0 hình học phải sửa |
+| 8–10 | ⛔ Bị chặn | Cần Spark + Sedona. Máy phát triển không có Java Runtime, và Task 1 chưa xác minh xong |
+| 11 | ✅ Xong | 2 test đạt, kèm `docs/runbook-cap-nhat-nghi-quyet.md` |
+
+### Sai lệch so với kế hoạch, phát hiện lúc chạy
+
+1. **Mã xã fixture.** Kế hoạch dự phòng đúng: `26734` không thuộc TP. Hồ Chí Minh trong `v5.0.0`. Đã thay bằng `25747` (Phường Thủ Dầu Một).
+
+2. **Hai luật kiểm định đo sai thứ** (Task 6). Chạy thật cho thấy bộ dữ liệu chứa hai lớp bản đồ số hoá độc lập, và lớp cấp tỉnh thô hơn, không vẽ đảo. Đã đổi thước đo, ghi đầy đủ bằng chứng vào spec mục 7.1. Code hiện tại khác code trong Task 6 dưới đây; **lấy `src/vn_geo_build/validator.py` làm chuẩn**.
+
+3. **Thêm `measure()`** vào `validator.py` và cột `metrics` vào báo cáo dựng bảng. Kế hoạch yêu cầu ghi lại ba con số làm căn cứ quyết định `snap_tolerance_m`, nhưng bản cài đặt ban đầu chỉ ghi khi vượt ngưỡng — lúc bình thường không biết nó gần ngưỡng đến đâu.
+
+4. **`BuildReport` thêm trường** `province_code_mismatches`, phục vụ luật nhất quán chéo mới.
+
+### Số đo trên `v5.0.0`
+
+| Số đo | Giá trị | Ngưỡng |
+|---|---|---|
+| Hình học phải sửa | 0 | — |
+| Tỉ lệ chồng lấn | 0,00335% | 0,01% |
+| Lỗ hổng lớn nhất | 0,00182% (tỉnh 31) | 0,01% |
+| Tổng diện tích | 329.636 km² | 331.000 ± 2% |
+| Hộp bao quốc gia | 102,14–117,83°E, 7,18–23,39°N | có Trường Sa |
+
+---
+
 ## Ràng buộc toàn cục
 
 Mọi nhiệm vụ đều ngầm chịu các ràng buộc này.
