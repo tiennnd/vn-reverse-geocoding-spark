@@ -14,10 +14,14 @@
 
 | Task | Trạng thái | Ghi chú |
 |---|---|---|
-| 1 | ⚠️ Chặn một phần | Script và biểu mẫu đã có. Phần chạy `spark-submit` cần cụm thật và đội hạ tầng. `docs/environment.md` đang ghi CHƯA XÁC MINH |
-| 2–7 | ✅ Xong | 30 test đạt. Đã dựng thật trên `v5.0.0`: 3321 xã, 34 tỉnh, 0 hình học phải sửa |
-| 8–10 | ⛔ Bị chặn | Cần Spark + Sedona. Máy phát triển không có Java Runtime, và Task 1 chưa xác minh xong |
+| 1 | ✅ Xong trên máy / ⚠️ chưa trên cụm | Spark 4.0.4 + Sedona 1.9.1 + Java 17 + Scala 2.13 đã chạy. Phiên bản của cụm ngân hàng vẫn chưa biết — xem `docs/environment.md` mục B |
+| 2–7 | ✅ Xong | Đã dựng thật trên `v5.0.0`: 3321 xã, 34 tỉnh, 0 hình học phải sửa |
+| 8 | ✅ Xong | 8 test đạt trên Spark local |
+| 9 | ✅ Xong | 2 test đạt, và đã nạp thật 3321 dòng vào bảng Iceberg cục bộ |
+| 10 | ✅ Một phần | Bài điểm đại diện **3321/3321 = 100,0000%** qua đường Sedona; bài hai bên ranh giới đạt. **Bộ điểm vàng còn thiếu** — cần toạ độ chi nhánh/ATM của ngân hàng |
 | 11 | ✅ Xong | 2 test đạt, kèm `docs/runbook-cap-nhat-nghi-quyet.md` |
+
+**Tổng: 43 test đạt.**
 
 ### Sai lệch so với kế hoạch, phát hiện lúc chạy
 

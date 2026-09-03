@@ -28,6 +28,25 @@ org.apache.iceberg:iceberg-spark-runtime-4.0_2.13:1.11.0
 
 Kết quả bài thử `scripts/sedona_smoke_test.py`: **`SEDONA OK | spark 4.0.4`**
 
+### Toàn trình đã chạy được trên máy (03/09/2026)
+
+`python scripts/local_end_to_end.py` — tạo bảng Iceberg thật, nạp 3321 xã, rồi
+kiểm chứng qua đúng đường Sedona mà job thật sẽ đi:
+
+- Nạp: 3321 dòng vào `local.dim.dim_vn_ward_gis`
+- **Bài điểm đại diện: 3321/3321 = 100,0000%** — bài duy nhất phải đạt tuyệt đối
+- Bốn trạng thái đều đúng: `MATCHED`, `OUT_OF_BOUNDS` (Biển Đông), `INVALID_INPUT`
+  (toạ độ đảo ngược và Null Island), và `geo_ref_is_exact = false` cho giao dịch
+  năm 2024
+- Đảo Trường Sa Lớn tra ra `Đặc khu Trường Sa, Tỉnh Khánh Hoà`
+
+### Giới hạn của catalog cục bộ
+
+Catalog Iceberg kiểu `hadoop` **không hỗ trợ view** (`UnsupportedOperationException:
+Replacing a view is not supported`). Đây là giới hạn của môi trường máy, không
+phải của thiết kế — catalog Hive hoặc REST trên cụm tạo view bình thường.
+`scripts/local_end_to_end.py` tự lùi về temp view khi gặp lỗi này.
+
 ### Vì sao Spark 4.0 chứ không phải 4.1 hay 4.2
 
 - **4.2 bị loại thẳng**: Sedona chưa có bản dựng nào cho Spark 4.2
