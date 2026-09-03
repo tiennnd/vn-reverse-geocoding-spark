@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from shapely import wkb
+from shapely.geometry import Polygon
 from shapely.geometry.base import BaseGeometry
+from shapely.ops import unary_union
 from shapely.strtree import STRtree
 
 from . import config
@@ -17,6 +19,53 @@ from .dim_builder import BuildReport, DimRow
 class ValidationIssue:
     rule: str
     detail: str
+
+
+def measure(rows: Sequence[DimRow]) -> dict[str, float]:
+    """Đo ba con số cần cho quyết định `snap_tolerance_m` (spec mục 6.3).
+
+    Luôn trả về giá trị đo được, kể cả khi chúng nằm trong ngưỡng —
+    một con số chỉ hiện ra lúc vượt ngưỡng thì không dùng để quyết định
+    được, vì lúc bình thường ta không biết nó gần ngưỡng đến đâu.
+    """
+    geoms = {r.ward_code: wkb.loads(r.geom) for r in rows}
+    valid = {c: g for c, g in geoms.items() if g.is_valid and not g.is_empty}
+
+    codes = list(valid)
+    tree = STRtree([valid[c] for c in codes])
+    overlap = 0.0
+    total_deg = sum(g.area for g in valid.values()) or 1.0
+    for i, c in enumerate(codes):
+        for j in tree.query(valid[c]):
+            if j <= i:
+                continue
+            inter = valid[c].intersection(valid[codes[j]])
+            if not inter.is_empty:
+                overlap += inter.area
+
+    by_province: dict[str, list[BaseGeometry]] = defaultdict(list)
+    for r in rows:
+        if r.ward_code in valid:
+            by_province[r.province_code].append(valid[r.ward_code])
+    gaps: dict[str, float] = {}
+    for pcode, ws in by_province.items():
+        u = unary_union(ws)
+        if u.is_empty or u.area <= 0:
+            continue
+        hole_area = sum(
+            Polygon(ring).area
+            for poly in getattr(u, "geoms", [u])
+            for ring in getattr(poly, "interiors", [])
+        )
+        gaps[pcode] = hole_area / u.area
+
+    worst = max(gaps.items(), key=lambda kv: kv[1], default=("", 0.0))
+    return {
+        "overlap_ratio": overlap / total_deg,
+        "max_gap_ratio": worst[1],
+        "max_gap_province": worst[0],
+        "total_area_km2": sum(r.area_km2 for r in rows),
+    }
 
 
 def validate(
@@ -82,31 +131,57 @@ def validate(
             "chong_lan", f"ti le chong lan {overlap / total_area_deg:.5%}"
         ))
 
-    # 6. Khe hở trong từng tỉnh
+    # 6. Khe hở THẬT giữa các xã liền kề: lỗ rỗng bên trong hợp của các xã
+    #    trong cùng một tỉnh. Đây mới là thứ gây OUT_OF_BOUNDS sai.
+    #    KHÔNG so với polygon cấp tỉnh — đó là một lớp bản đồ số hoá độc
+    #    lập (diaphanhanhchinhcaptinh_sn), thô hơn và bỏ sót đảo, nên
+    #    hiệu hai diện tích đo sự khác nhau giữa hai lớp chứ không đo khe hở.
+    #    Chỉ gộp hình học hợp lệ — hình học hỏng đã do luật 2 báo, và
+    #    unary_union sẽ ném GEOSException nếu gặp phải.
     by_province: dict[str, list[BaseGeometry]] = defaultdict(list)
     for r in rows:
-        by_province[r.province_code].append(geoms[r.ward_code])
+        g = geoms[r.ward_code]
+        if g.is_valid:
+            by_province[r.province_code].append(g)
     for pcode, ws in by_province.items():
-        pg = province_geoms.get(pcode)
-        if pg is None:
+        u = unary_union(ws)
+        if u.is_empty or u.area <= 0:
             continue
-        union_area = sum(w.area for w in ws)
-        if pg.area <= 0:
-            continue
-        gap = (pg.area - union_area) / pg.area
+        hole_area = sum(
+            Polygon(ring).area
+            for poly in getattr(u, "geoms", [u])
+            for ring in getattr(poly, "interiors", [])
+        )
+        gap = hole_area / u.area
         if gap > config.GAP_TOLERANCE:
-            issues.append(ValidationIssue("khe_ho", f"tinh {pcode}: khe ho {gap:.5%}"))
-
-    # 7. Nhất quán chéo GIS và thuộc tính
-    for r in rows:
-        pg = province_geoms.get(r.province_code)
-        if pg is None:
-            continue
-        if not pg.contains(geoms[r.ward_code].representative_point()):
             issues.append(ValidationIssue(
-                "nhat_quan_cheo",
-                f"xa {r.ward_code} khong nam trong tinh {r.province_code}",
+                "khe_ho", f"tinh {pcode}: lo hong giua cac xa {gap:.5%}"
             ))
+
+    # 7. Nhất quán chéo hai nguồn: thư mục tỉnh trong zip GeoJSON phải
+    #    khớp trường ProvinceCode trong JSON thuộc tính. Lệch nghĩa là
+    #    hình học bị ghép nhầm thuộc tính — đúng lỗi cần bắt.
+    for ward_code, dir_code, json_code in report.province_code_mismatches:
+        issues.append(ValidationIssue(
+            "nhat_quan_cheo",
+            f"xa {ward_code}: thu muc geojson noi tinh {dir_code}, "
+            f"json thuoc tinh noi tinh {json_code}",
+        ))
+
+    # 7b. Cảnh báo: xã nằm ngoài polygon cấp tỉnh. Không chặn — lớp cấp
+    #     tỉnh bỏ sót đảo và có đường bờ thô hơn, mà lớp này không hề
+    #     được dùng lúc truy vấn.
+    outside = [
+        r.ward_code
+        for r in rows
+        if (pg := province_geoms.get(r.province_code)) is not None
+        and not pg.contains(geoms[r.ward_code].representative_point())
+    ]
+    if outside:
+        issues.append(ValidationIssue(
+            "canh_bao_ngoai_lop_tinh",
+            f"{len(outside)} xa nam ngoai polygon cap tinh: {outside[:10]}",
+        ))
 
     # 8. Toàn vẹn SCD2: không chồng lấn khoảng thời gian
     spans: dict[str, list[tuple]] = defaultdict(list)

@@ -46,6 +46,8 @@ class BuildReport:
     n_provinces: int
     n_geometries_fixed: int
     national_bbox: tuple[float, float, float, float]
+    # (ma_xa, ma_tinh_theo_thu_muc_geojson, ma_tinh_theo_json_thuoc_tinh)
+    province_code_mismatches: tuple[tuple[str, str, str], ...] = ()
 
 
 def _ensure_valid(geom: BaseGeometry) -> tuple[BaseGeometry, bool]:
@@ -74,6 +76,7 @@ def build_dim(
     feats: Sequence[GeoFeature] = list(features)
     province_geoms: dict[str, BaseGeometry] = {}
     rows: list[DimRow] = []
+    mismatches: list[tuple[str, str, str]] = []
     n_fixed = 0
     minx = miny = float("inf")
     maxx = maxy = float("-inf")
@@ -95,6 +98,12 @@ def build_dim(
         pa = provinces.get(wa.province_code)
         if pa is None:
             raise KeyError(f"tinh {wa.province_code} khong co thuoc tinh")
+
+        # Đối chiếu chéo hai nguồn độc lập: thư mục trong zip GeoJSON và
+        # trường ProvinceCode trong JSON thuộc tính. Lệch nhau nghĩa là
+        # hình học đã bị ghép nhầm thuộc tính.
+        if f.province_code != wa.province_code:
+            mismatches.append((f.code, f.province_code, wa.province_code))
 
         rows.append(
             DimRow(
@@ -128,5 +137,6 @@ def build_dim(
         n_provinces=len(province_geoms),
         n_geometries_fixed=n_fixed,
         national_bbox=(minx, miny, maxx, maxy),
+        province_code_mismatches=tuple(mismatches),
     )
     return rows, report, province_geoms

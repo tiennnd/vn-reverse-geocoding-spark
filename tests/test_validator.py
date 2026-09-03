@@ -78,12 +78,24 @@ def test_bat_duoc_chong_lan():
     assert "chong_lan" in _rules(issues)
 
 
-def test_bat_duoc_xa_nam_sai_tinh():
+def test_bat_duoc_hinh_hoc_ghep_nham_thuoc_tinh():
+    """Thư mục tỉnh trong zip GeoJSON lệch ProvinceCode trong JSON."""
     rows, report, pgeoms, wcodes, pcodes = _build()
-    far_away = MultiPolygon([box(0, 0, 1, 1)])  # ngoài lãnh thổ VN
-    moved = [DimRow(**{**rows[0].__dict__, "geom": wkb.dumps(far_away)})]
-    issues = _validate(moved + rows[1:], report, pgeoms, wcodes, pcodes)
+    lech = BuildReport(**{**report.__dict__,
+                          "province_code_mismatches": (("00004", "79", "01"),)})
+    issues = _validate(rows, lech, pgeoms, wcodes, pcodes)
     assert "nhat_quan_cheo" in _rules(issues)
+
+
+def test_xa_ngoai_polygon_cap_tinh_chi_la_canh_bao_khong_chan():
+    """Lớp cấp tỉnh bỏ sót đảo, nên nằm ngoài nó không được phép chặn."""
+    rows, report, pgeoms, wcodes, pcodes = _build()
+    xa_dao = MultiPolygon([box(0, 0, 1, 1)])  # ngoài lãnh thổ VN
+    moved = [DimRow(**{**rows[0].__dict__, "geom": wkb.dumps(xa_dao)})]
+    issues = _validate(moved + rows[1:], report, pgeoms, wcodes, pcodes)
+    chan = {i.rule for i in issues if not i.rule.startswith("canh_bao_")}
+    assert "canh_bao_ngoai_lop_tinh" in _rules(issues)
+    assert "nhat_quan_cheo" not in chan
 
 
 def test_bat_duoc_scd2_chong_lan_khoang_thoi_gian():
@@ -99,3 +111,15 @@ def test_bat_duoc_tong_dien_tich_lech_qua_nguong():
     inflated = [DimRow(**{**r.__dict__, "area_km2": 1_000_000.0}) for r in rows]
     issues = _validate(inflated, huge, pgeoms, wcodes, pcodes)
     assert "tong_dien_tich" in _rules(issues)
+
+
+def test_ham_do_luon_tra_ve_so_do_ke_ca_khi_trong_nguong():
+    """Số đo phải có mặt kể cả lúc không vi phạm — đó là điểm của nó."""
+    from vn_geo_build.validator import measure
+
+    rows, *_ = _build()
+    m = measure(rows)
+    assert set(m) == {"overlap_ratio", "max_gap_ratio", "max_gap_province",
+                      "total_area_km2"}
+    assert m["overlap_ratio"] >= 0
+    assert m["total_area_km2"] > 0
