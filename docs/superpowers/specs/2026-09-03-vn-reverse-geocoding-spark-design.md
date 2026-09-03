@@ -273,15 +273,35 @@ Chạy mỗi lần dựng; bất kỳ mục nào hỏng là không đẩy lên I
 | Không polygon rỗng | Không có diện tích bằng 0 |
 | Tổng diện tích | Khoảng 331.000 km², sai lệch trong ±2% |
 | Chồng lấn | Tổng diện tích giao nhau giữa các cặp xã dưới 0,01% tổng diện tích |
-| Khe hở | Diện tích tỉnh trừ tổng diện tích các xã thuộc tỉnh dưới 0,01% |
-| Nhất quán chéo GIS ↔ thuộc tính | Điểm đại diện mỗi xã nằm trong polygon của đúng tỉnh mà bảng thuộc tính khai báo |
+| Khe hở | Diện tích các lỗ rỗng bên trong hợp của các xã cùng tỉnh, dưới 0,01% |
+| Nhất quán chéo GIS ↔ thuộc tính | Thư mục tỉnh trong zip GeoJSON khớp `ProvinceCode` trong JSON thuộc tính |
 | Toàn vẹn SCD2 | Không có hai bản ghi cùng `ward_code` chồng lấn khoảng thời gian; đúng một bản `is_current` |
 
 Kiểm định chạy **ngoài cụm bằng `shapely`**, không phải bằng Sedona: `geom.is_valid` để kiểm tra, `shapely.make_valid()` để sửa, `geom.representative_point()` để lấy điểm đại diện. Lý do là kiểm định phải chạy được trước khi dữ liệu lên cụm — đó mới là điểm của một cửa chặn xuất bản.
 
 Dùng **điểm đại diện, không dùng trọng tâm** (`representative_point()`, không phải `centroid`). Trọng tâm của một xã hình vòng cung hoặc gồm nhiều mảnh rời có thể rơi ra ngoài chính nó và gây báo lỗi giả hàng loạt. Bài kiểm tra tương ứng ở mục 7.3 chạy trên cụm thì dùng `ST_PointOnSurface`.
 
-Hai mục chồng lấn và khe hở vừa là cửa chặn, vừa là căn cứ quyết định có cần cơ chế hút về xã gần nhất (mục 6.3).
+Hai mục chồng lấn và khe hở vừa là cửa chặn, vừa là căn cứ quyết định có cần cơ chế hút về xã gần nhất (mục 6.3). Số đo được ghi vào báo cáo dựng bảng **kể cả khi nằm trong ngưỡng** — một con số chỉ hiện ra lúc vượt ngưỡng thì không dùng để quyết định được, vì lúc bình thường ta không biết nó gần ngưỡng đến đâu.
+
+#### Vì sao không so với polygon cấp tỉnh
+
+Hai luật trên ban đầu được viết theo hướng lấy polygon cấp tỉnh làm chuẩn đối chiếu. Chạy thật trên `v5.0.0` cho thấy đó là thước đo sai, và đã sửa.
+
+Bộ dữ liệu chứa **hai lớp bản đồ số hoá độc lập**: `diaphanhanhchinhcaptinh_sn` cho cấp tỉnh và `diaphanhanhchinhcapxa_2025` cho cấp xã. Chúng không khớp nhau, và lớp cấp tỉnh thô hơn:
+
+| Bằng chứng | Ý nghĩa |
+|---|---|
+| Hà Nội cho hiệu diện tích **âm** (−0,13%) | Hợp các xã *lớn hơn* polygon tỉnh — không thể là khe hở |
+| Lỗ rỗng thật giữa các xã: ≤ 0,000002% | Lớp cấp xã lát kín sạch; toàn bộ "khe hở" 0,01–1,64% là do lệch lớp |
+| Xã Nhơn Châu (Cù Lao Xanh) nằm 100% ngoài polygon tỉnh, cách bờ 14 km | Lớp cấp tỉnh **không vẽ đảo** |
+
+Điểm quyết định: **polygon cấp tỉnh không bao giờ được dùng lúc truy vấn.** Bảng chiều chỉ lưu hình học cấp xã; thuộc tính tỉnh lấy từ nguồn JSON. Lấy một lớp không tham gia vào kết quả làm chuẩn chấm điểm cho lớp có tham gia là chọn nhầm thước đo.
+
+Nên hai luật đo lại như sau:
+
+- **Khe hở** đo lỗ rỗng bên trong hợp của các xã cùng tỉnh — đúng thứ gây `OUT_OF_BOUNDS` sai.
+- **Nhất quán chéo** đối chiếu thư mục tỉnh trong zip GeoJSON với `ProvinceCode` trong JSON thuộc tính. Vẫn là hai nguồn độc lập, và bắt đúng lỗi cần bắt: hình học bị ghép nhầm thuộc tính.
+- Việc một xã nằm ngoài polygon cấp tỉnh hạ xuống thành **cảnh báo**, không chặn xuất bản.
 
 ### 7.2 Kiểm thử phần mềm
 
@@ -351,6 +371,17 @@ Muốn so sánh xuyên mốc cần một bảng ánh xạ xã cũ → xã mới.
 ### 9.2 Hút về xã gần nhất
 
 Tham số `snap_tolerance_m` đã có trong giao diện, mặc định `0`. Bật lên khi số liệu ở mục 6.3 cho thấy cần, với bán kính chọn theo số liệu chứ không theo phỏng đoán.
+
+Số đo trên `v5.0.0` (dựng ngày 03/09/2026):
+
+| Số đo | Giá trị | Ngưỡng |
+|---|---|---|
+| Hình học phải sửa bằng `make_valid` | 0 | — |
+| Tỉ lệ chồng lấn giữa các xã | 0,00335% | 0,01% |
+| Lỗ hổng lớn nhất trong một tỉnh | 0,00182% (tỉnh 31) | 0,01% |
+| Tổng diện tích | 329.636 km² | 331.000 ± 2% |
+
+Kết luận một nửa: **khe hở tô-pô không phải lý do để xây cơ chế hút** — dữ liệu lát kín sạch, lỗ hổng chỉ bằng một phần năm ngưỡng. Nửa còn lại chưa đo được: tỉ lệ `OUT_OF_BOUNDS` do GPS trôi ở ven biển, cần dữ liệu thật của ngân hàng (mục 7.3). Chỉ khi con số đó đáng kể thì mới bật, và bán kính chọn theo nó.
 
 ### 9.3 Vá ranh giới giai đoạn 01/07/2025 → 29/04/2026
 
