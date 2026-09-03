@@ -5,7 +5,9 @@ requires-python = ">=3.10"
 dependencies = ["shapely>=2.0", "pyarrow>=14.0", "requests>=2.31"]
 
 [project.optional-dependencies]
-spark = ["pyspark>=3.4", "apache-sedona>=1.5"]
+# pandas KHONG phai tuy chon: apache-sedona import no luc nap module nhung
+# khong khai bao la phu thuoc bat buoc. Xem docs/environment.md.
+spark = ["pyspark==4.0.4", "apache-sedona==1.9.1", "pandas>=2.0"]
 dev = ["pytest>=7.4"]
 
 [project.scripts]
