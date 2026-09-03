@@ -1,0 +1,84 @@
+[
+ {
+  "Type": "province",
+  "Code": "01",
+  "Name": "Hà Nội",
+  "NameEn": "Hanoi",
+  "FullName": "Thành phố Hà Nội",
+  "FullNameEn": "Hanoi City",
+  "CodeName": "ha_noi",
+  "PostalCodePrefix": "10, 11, 12, 13, 14",
+  "AdministrativeUnitId": 1,
+  "AdministrativeUnitShortName": "Thành phố",
+  "AdministrativeUnitFullName": "Thành phố trực thuộc trung ương",
+  "AdministrativeUnitShortNameEn": "City",
+  "AdministrativeUnitFullNameEn": "Municipality",
+  "Wards": [
+   {
+    "Type": "ward",
+    "Code": "00004",
+    "Name": "Ba Đình",
+    "NameEn": "Ba Dinh",
+    "FullName": "Phường Ba Đình",
+    "FullNameEn": "Ba Dinh Ward",
+    "CodeName": "ba_dinh",
+    "ProvinceCode": "01",
+    "PostalCode": "11120",
+    "AdministrativeUnitId": 3,
+    "AdministrativeUnitShortName": "Phường",
+    "AdministrativeUnitFullName": "Phường",
+    "AdministrativeUnitShortNameEn": "Ward",
+    "AdministrativeUnitFullNameEn": "Ward"
+   },
+   {
+    "Type": "ward",
+    "Code": "00008",
+    "Name": "Ngọc Hà",
+    "NameEn": "Ngoc Ha",
+    "FullName": "Phường Ngọc Hà",
+    "FullNameEn": "Ngoc Ha Ward",
+    "CodeName": "ngoc_ha",
+    "ProvinceCode": "01",
+    "PostalCode": "11119",
+    "AdministrativeUnitId": 3,
+    "AdministrativeUnitShortName": "Phường",
+    "AdministrativeUnitFullName": "Phường",
+    "AdministrativeUnitShortNameEn": "Ward",
+    "AdministrativeUnitFullNameEn": "Ward"
+   }
+  ]
+ },
+ {
+  "Type": "province",
+  "Code": "79",
+  "Name": "Hồ Chí Minh",
+  "NameEn": "Ho Chi Minh",
+  "FullName": "Thành phố Hồ Chí Minh",
+  "FullNameEn": "Ho Chi Minh City",
+  "CodeName": "ho_chi_minh",
+  "PostalCodePrefix": "70, 71, 72, 73, 74, 75, 78",
+  "AdministrativeUnitId": 1,
+  "AdministrativeUnitShortName": "Thành phố",
+  "AdministrativeUnitFullName": "Thành phố trực thuộc trung ương",
+  "AdministrativeUnitShortNameEn": "City",
+  "AdministrativeUnitFullNameEn": "Municipality",
+  "Wards": [
+   {
+    "Type": "ward",
+    "Code": "25747",
+    "Name": "Thủ Dầu Một",
+    "NameEn": "Thu Dau Mot",
+    "FullName": "Phường Thủ Dầu Một",
+    "FullNameEn": "Thu Dau Mot Ward",
+    "CodeName": "thu_dau_mot",
+    "ProvinceCode": "79",
+    "PostalCode": "75123",
+    "AdministrativeUnitId": 3,
+    "AdministrativeUnitShortName": "Phường",
+    "AdministrativeUnitFullName": "Phường",
+    "AdministrativeUnitShortNameEn": "Ward",
+    "AdministrativeUnitFullNameEn": "Ward"
+   }
+  ]
+ }
+]
