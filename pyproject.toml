@@ -1,0 +1,22 @@
+[project]
+name = "vn-reverse-geocoding"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["shapely>=2.0", "pyarrow>=14.0", "requests>=2.31"]
+
+[project.optional-dependencies]
+spark = ["pyspark>=3.4", "apache-sedona>=1.5"]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+vn-geo-build = "vn_geo_build.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+markers = ["spark: can SparkSession local, chay cham"]

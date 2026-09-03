@@ -1,6 +1,10 @@
 __pycache__/
 *.pyc
+*.egg-info/
 .venv/
+.cache/
+build/
 data/*
 !data/.gitkeep
+tests/fixtures/.cache/
 .DS_Store
