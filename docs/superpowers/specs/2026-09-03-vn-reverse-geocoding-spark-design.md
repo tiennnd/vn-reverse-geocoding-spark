@@ -14,7 +14,7 @@ Datalake hiện có nhiều bảng chứa toạ độ GPS (`lat`, `lon`) nhưng 
 
 ### 1.2 Phạm vi
 
-**Trong phạm vi.** Từ một cặp `(lat, lon)` trả về đơn vị hành chính chứa điểm đó: phường/xã/đặc khu, tỉnh/thành phố, mã đơn vị, mã bưu chính, vùng miền — theo mô hình hành chính hai cấp có hiệu lực tại thời điểm dữ liệu phát sinh.
+**Trong phạm vi.** Từ một cặp `(lat, lon)` trả về đơn vị hành chính chứa điểm đó: phường/xã/đặc khu, tỉnh/thành phố, mã đơn vị, mã bưu chính — theo mô hình hành chính hai cấp có hiệu lực tại thời điểm dữ liệu phát sinh.
 
 **Ngoài phạm vi.** Tên đường và số nhà. Nguồn dữ liệu không chứa thông tin này; muốn có phải dùng OpenStreetMap hoặc dịch vụ thương mại. Người dùng đã xác nhận không cần và không muốn gọi API ngoài.
 
@@ -115,7 +115,7 @@ NỬA B — Nạp và phục vụ (trên cụm)                       ▼
 |---|---|---|---|
 | `source_fetcher` | Tải release theo tag đã ghim, đối chiếu checksum | Ngoài cụm | `requests` |
 | `geojson_reader` | Zip → luồng `(ward_code, geometry)` | Ngoài cụm | thư viện chuẩn, `shapely` |
-| `attribute_reader` | JSON → thuộc tính hành chính, mã bưu chính, vùng miền | Ngoài cụm | thư viện chuẩn |
+| `attribute_reader` | JSON → thuộc tính hành chính, loại đơn vị, mã bưu chính | Ngoài cụm | thư viện chuẩn |
 | `dim_builder` | Ghép hai nguồn, sinh WKB và bbox, gắn cột SCD2 | Ngoài cụm | `shapely`, `pyarrow` |
 | `validator` | Kiểm định độc lập trên kết quả builder | Ngoài cụm | `shapely` |
 | `iceberg_loader` | MERGE theo ngữ nghĩa SCD2 vào bảng đích | Trên cụm | PySpark, Iceberg |
@@ -147,7 +147,6 @@ Khoá nghiệp vụ: `(ward_code, valid_from)`. Mỗi phiên bản 3321 dòng. K
 | Tỉnh/thành | `province_code` | STRING | |
 | | `province_name`, `province_full_name`, `province_name_en` | STRING | |
 | | `province_postal_code_prefix` | STRING | |
-| Vùng miền | `region_name` | STRING | |
 | Không gian | `bbox` | BINARY | WKB Polygon, dùng lọc thô |
 | | `geom` | BINARY | WKB MultiPolygon, EPSG:4326, nguyên độ phân giải |
 | | `area_km2` | DECIMAL(12,5) | |
@@ -361,7 +360,13 @@ Khác biệt duy nhất so với hiện hành là việc lập TP. Đồng Nai. 
 
 Nếu quy mô lên hàng tỷ dòng và ghép không gian thành nút thắt. Vì bảng chiều đã lưu geometry ở dạng WKB chuẩn, việc tiền tính lưới H3 là một job đọc thêm, không phải làm lại dữ liệu.
 
-### 9.5 Tên đường và số nhà
+### 9.5 Cột vùng miền (`region_name`)
+
+Thiết kế ban đầu có cột này, đã bỏ sau khi kiểm tra dữ liệu thật. Bảng `administrative_regions` vẫn tồn tại trong bộ dữ liệu (8 vùng: Đông Bắc Bộ, Tây Bắc Bộ, Đồng bằng sông Hồng...), nhưng **sau tái cấu trúc 2025 không còn trường nào ở cấp tỉnh trỏ tới nó** — cả lược đồ PostgreSQL lẫn `full_json_generated_data_vn_units.json` đều không có khoá ngoại về vùng. Nghĩa là không suy ra được vùng miền của một tỉnh từ bộ dữ liệu này.
+
+Nếu về sau cần cột này, cách duy nhất là tự duy trì một bảng ánh xạ 34 dòng tỉnh → vùng. Rẻ về công sức nhưng là dữ liệu tự chế, phải có người chịu trách nhiệm cập nhật khi có tỉnh mới — nên chỉ làm khi có nhu cầu thật.
+
+### 9.6 Tên đường và số nhà
 
 Cần nguồn khác: OpenStreetMap hoặc dịch vụ thương mại. Bảng chiều ở đây vẫn giữ vai trò chuẩn hoá phần hành chính theo mô hình hai cấp — thứ mà các nguồn quốc tế thường trả về sai hoặc còn dùng dữ liệu quận/huyện cũ.
 
