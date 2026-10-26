@@ -68,10 +68,21 @@ spark-submit --packages <xem docs/environment.md> \
 
 ## 6. Đối chứng lại
 
+`verify_accuracy.py` import `vn_geo`. Nếu venv trên cụm chưa cài package này
+thì đóng gói và gửi kèm bằng `--py-files`, thiếu là `ModuleNotFoundError`:
+
 ```bash
-spark-submit --packages <...> scripts/verify_accuracy.py \
-  --dim-table dim.dim_vn_ward_gis
+(cd src && zip -qr ../build/vn_geo.zip vn_geo -x '*__pycache__*')
+
+spark-submit --packages <...> --py-files build/vn_geo.zip \
+  scripts/verify_accuracy.py \
+  --dim-table dim.dim_vn_ward_gis \
+  --only-representative
 ```
+
+`--only-representative` chỉ chạy bài điểm đại diện (phải đạt 100%). Bỏ cờ này
+khi đã có bộ điểm vàng `golden/golden_points.csv` — thiếu file mà không có cờ
+thì script hỏng.
 
 Kỳ vọng: thay đổi ở đúng địa bàn bị ảnh hưởng, **không thay đổi ở nơi khác**.
 Vế thứ hai mới là điều đáng kiểm — nó bắt được thay đổi ngoài ý muốn.

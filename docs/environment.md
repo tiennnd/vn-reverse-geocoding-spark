@@ -86,17 +86,18 @@ Lệch một nấc là lỗi lúc chạy, không phải lúc tải gói.
 
 ---
 
-## B. Cụm ngân hàng — ⚠️ XÁC MINH MỘT PHẦN (22/10/2026)
+## B. Cụm ngân hàng — ⚠️ XÁC MINH MỘT PHẦN (26/10/2026)
 
-Cụm chạy **Spark 3.5.3 / Scala 2.12.18**. Máy phát triển (mục A) đã chuyển
-sang cùng phiên bản và chạy đạt toàn bộ test.
+Cụm chạy **Spark 3.5.3 / Scala 2.12.18 / Java 17.0.15 / Python 3.11**. Máy
+phát triển (mục A) cùng major Java và cùng minor Python, chạy đạt toàn bộ test.
+Bộ toạ độ gói dưới đây dùng được nguyên vẹn.
 
 | Thông tin | Cách lấy | Giá trị |
 |---|---|---|
 | Phiên bản Spark | `spark-submit --version` | **3.5.3** |
 | Phiên bản Scala | dòng `Using Scala version ...` | **2.12.18** |
-| Phiên bản Java | dòng `Using Scala version ..., <JVM> <phiên bản>` | *chưa có* — **quyết định chọn gói, xem dưới** |
-| Python của venv | `$PYSPARK_VENV_PATH/bin/python --version` | *chưa có* — phải ≤ 3.11 |
+| Phiên bản Java | dòng `Using Scala version ..., <JVM> <phiên bản>` | **17.0.15** — dùng nguyên bộ gói dưới |
+| Python của venv | `$PYSPARK_VENV_PATH/bin/python --version` | **3.11** |
 | Iceberg runtime | `SHOW TBLPROPERTIES` trên bảng Iceberg sẵn có | *chưa có* |
 
 Bảng tương thích Sedona: https://sedona.apache.org/latest/setup/maven-coordinates/
@@ -122,7 +123,7 @@ org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.11.0
 | `iceberg-spark-runtime-3.5_2.12:1.11.0` | **17** |
 | `iceberg-spark-runtime-3.5_2.12:1.10.1` trở xuống | 11 |
 
-- **Java 17:** dùng nguyên bộ trên.
+- **Java 17:** dùng nguyên bộ trên. ← **cụm thuộc trường hợp này**
 - **Java 11:** Iceberg phải ≤ 1.10.1.
 - **Java 8:** Spark 3.5 vẫn chạy, nhưng **Sedona 1.9.1 thì không**. Phải tìm
   bản Sedona cũ hơn còn biên dịch cho Java 8, hoặc xem lại hướng thiết kế.
