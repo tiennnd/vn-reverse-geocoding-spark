@@ -9,12 +9,16 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from datetime import date
 from pathlib import Path
 
 BREW_JDK17 = Path("/opt/homebrew/opt/openjdk@17")
 if "JAVA_HOME" not in os.environ and BREW_JDK17.exists():
     os.environ["JAVA_HOME"] = str(BREW_JDK17)
+# Worker mặc định chạy `python3` trong PATH, có thể khác minor với driver
+# (vd venv 3.11, hệ thống 3.13) và hỏng với PYTHON_VERSION_MISMATCH.
+os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
 
 from sedona.spark import SedonaContext  # noqa: E402
 
@@ -22,9 +26,9 @@ from vn_geo_build import config  # noqa: E402
 from vn_geo_load.iceberg_loader import load  # noqa: E402
 
 DEFAULT_PACKAGES = ",".join([
-    "org.apache.sedona:sedona-spark-shaded-4.0_2.13:1.9.1",
+    "org.apache.sedona:sedona-spark-shaded-3.5_2.12:1.9.1",
     "org.datasyslab:geotools-wrapper:1.9.1-33.5",
-    "org.apache.iceberg:iceberg-spark-runtime-4.0_2.13:1.11.0",
+    "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.11.0",
 ])
 EXTENSIONS = ",".join([
     "org.apache.sedona.sql.SedonaSqlExtensions",

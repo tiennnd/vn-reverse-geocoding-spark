@@ -10,11 +10,11 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-03-vn-reverse-geocoding-spark-design.md`
 
-## Trạng thái thực thi (cập nhật 03/09/2026)
+## Trạng thái thực thi (cập nhật 22/10/2026)
 
 | Task | Trạng thái | Ghi chú |
 |---|---|---|
-| 1 | ✅ Xong trên máy / ⚠️ chưa trên cụm | Spark 4.0.4 + Sedona 1.9.1 + Java 17 + Scala 2.13 đã chạy. Phiên bản của cụm ngân hàng vẫn chưa biết — xem `docs/environment.md` mục B |
+| 1 | ✅ Xong trên máy / ⚠️ chưa trên cụm | Cụm là Spark 3.5.3 / Scala 2.12.18; máy đã chuyển sang cùng phiên bản (Python 3.11, Java 17, Sedona 1.9.1), 43 test đạt. Còn thiếu Java và Python của cụm — xem `docs/environment.md` mục B |
 | 2–7 | ✅ Xong | Đã dựng thật trên `v5.0.0`: 3321 xã, 34 tỉnh, 0 hình học phải sửa |
 | 8 | ✅ Xong | 8 test đạt trên Spark local |
 | 9 | ✅ Xong | 2 test đạt, và đã nạp thật 3321 dòng vào bảng Iceberg cục bộ |

@@ -4,31 +4,48 @@ Có **hai** môi trường và chúng không giống nhau. Đừng lẫn.
 
 ---
 
-## A. Máy phát triển — ✅ ĐÃ XÁC MINH 03/09/2026
+## A. Máy phát triển — ✅ ĐÃ XÁC MINH 22/10/2026
 
 Dùng để phát triển và kiểm thử Task 8–10. Không phải môi trường chạy thật.
+Từ 22/10/2026 cấu hình **khớp Spark/Scala của cụm** (mục B), để không vô tình
+dùng API chỉ có ở Spark 4.
 
 | Thành phần | Phiên bản | Ghi chú |
 |---|---|---|
 | Java | OpenJDK **17.0.20.1** | `brew install openjdk@17`, keg-only |
 | `JAVA_HOME` | `/opt/homebrew/opt/openjdk@17` | `conftest.py` tự đặt nếu biến chưa có |
-| Spark / PySpark | **4.0.4** | Cài qua pip vào `.venv` |
-| Scala | **2.13** | Từ Spark 4.0 không còn lựa chọn nào khác |
-| Python | **3.13** | PySpark 4.0.4 khai báo hỗ trợ |
+| Spark / PySpark | **3.5.3** | Cài qua pip vào `.venv` |
+| Scala | **2.12** | Khớp cụm (2.12.18) |
+| Python | **3.11** | PySpark 3.5.3 chỉ hỗ trợ tới 3.11 — xem mục B |
 | Sedona | **1.9.1** | |
-| Iceberg | **1.11.0** | |
+| Iceberg | **1.11.0** | Cần Java 17 — xem mục B |
 
-Toạ độ gói đã chạy được, nguyên văn:
+Dựng lại `.venv`:
+
+```bash
+uv venv --python 3.11 .venv
+uv pip install --python .venv/bin/python -e ".[spark,dev]"
+```
+
+Toạ độ gói đã chạy được, nguyên văn (cũng là mặc định trong `conftest.py`
+và `scripts/local_end_to_end.py`):
 
 ```
-org.apache.sedona:sedona-spark-shaded-4.0_2.13:1.9.1
+org.apache.sedona:sedona-spark-shaded-3.5_2.12:1.9.1
 org.datasyslab:geotools-wrapper:1.9.1-33.5
-org.apache.iceberg:iceberg-spark-runtime-4.0_2.13:1.11.0
+org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.11.0
 ```
 
-Kết quả bài thử `scripts/sedona_smoke_test.py`: **`SEDONA OK | spark 4.0.4`**
+Kết quả bài thử `scripts/sedona_smoke_test.py`: **`SEDONA OK`**
 
-### Toàn trình đã chạy được trên máy (03/09/2026)
+`conftest.py` và `scripts/local_end_to_end.py` tự đặt `PYSPARK_PYTHON` bằng
+python đang chạy. Thiếu bước này thì worker lấy `python3` trong PATH (hệ
+thống là 3.13) và mọi test Spark hỏng với `PYTHON_VERSION_MISMATCH`. Khi tự
+gọi `spark-submit` trên máy thì phải tự đặt biến này.
+
+### Toàn trình đã chạy được trên máy (22/10/2026)
+
+`pytest`: **43/43 đạt**.
 
 `python scripts/local_end_to_end.py` — tạo bảng Iceberg thật, nạp 3321 xã, rồi
 kiểm chứng qua đúng đường Sedona mà job thật sẽ đi:
@@ -40,6 +57,9 @@ kiểm chứng qua đúng đường Sedona mà job thật sẽ đi:
   năm 2024
 - Đảo Trường Sa Lớn tra ra `Đặc khu Trường Sa, Tỉnh Khánh Hoà`
 
+Máy chạy đúng phiên bản Spark/Scala của cụm nhưng không thay được bài thử
+trên cụm: JVM, venv và catalog của cụm vẫn chưa được xác nhận.
+
 ### Giới hạn của catalog cục bộ
 
 Catalog Iceberg kiểu `hadoop` **không hỗ trợ view** (`UnsupportedOperationException:
@@ -47,13 +67,12 @@ Replacing a view is not supported`). Đây là giới hạn của môi trường
 phải của thiết kế — catalog Hive hoặc REST trên cụm tạo view bình thường.
 `scripts/local_end_to_end.py` tự lùi về temp view khi gặp lỗi này.
 
-### Vì sao Spark 4.0 chứ không phải 4.1 hay 4.2
+### Lịch sử: Spark 4.0.4 (03/09 → 22/10/2026)
 
-- **4.2 bị loại thẳng**: Sedona chưa có bản dựng nào cho Spark 4.2
-  (`sedona-spark-shaded-4.2_2.13` trả về HTTP 404).
-- **4.1**: Sedona 1.9.0 và 1.9.1 có hỗ trợ, nhưng chỉ hai bản.
-- **4.0**: có bốn bản Sedona (1.8.0, 1.8.1, 1.9.0, 1.9.1). Nếu 1.9.1 giở
-  chứng thì lùi được về 1.8.1 mà không đụng tới Spark. 4.1 không có đường lùi đó.
+Trước khi biết phiên bản cụm, máy chạy Spark 4.0.4 / Scala 2.13 / Python 3.13
+với các gói `*-4.0_2.13` cùng phiên bản Sedona và Iceberg như trên, cũng đạt
+toàn bộ test và bài điểm đại diện 100%. Code chạy được trên cả hai dòng Spark
+mà không phải sửa.
 
 `geotools-wrapper` phải là **1.9.1-33.5** — số đầu bám sát phiên bản Sedona.
 Lệch một nấc là lỗi lúc chạy, không phải lúc tải gói.
@@ -67,28 +86,55 @@ Lệch một nấc là lỗi lúc chạy, không phải lúc tải gói.
 
 ---
 
-## B. Cụm ngân hàng — ⚠️ CHƯA XÁC MINH
+## B. Cụm ngân hàng — ⚠️ XÁC MINH MỘT PHẦN (22/10/2026)
 
-**Việc máy phát triển chạy Spark 4.0 không có nghĩa cụm cũng vậy.** Cụm nhiều
-khả năng còn ở Spark 3.x, và toàn bộ toạ độ gói ở mục A sẽ **không** dùng
-được ở đó. Task 1 vẫn còn nguyên giá trị.
+Cụm chạy **Spark 3.5.3 / Scala 2.12.18**. Máy phát triển (mục A) đã chuyển
+sang cùng phiên bản và chạy đạt toàn bộ test.
 
 | Thông tin | Cách lấy | Giá trị |
 |---|---|---|
-| Phiên bản Spark | `spark-submit --version` | *chưa có* |
-| Phiên bản Scala | dòng `Using Scala version ...` | *chưa có* |
-| Python của venv | `$PYSPARK_VENV_PATH/bin/python --version` | *chưa có* |
+| Phiên bản Spark | `spark-submit --version` | **3.5.3** |
+| Phiên bản Scala | dòng `Using Scala version ...` | **2.12.18** |
+| Phiên bản Java | dòng `Using Scala version ..., <JVM> <phiên bản>` | *chưa có* — **quyết định chọn gói, xem dưới** |
+| Python của venv | `$PYSPARK_VENV_PATH/bin/python --version` | *chưa có* — phải ≤ 3.11 |
 | Iceberg runtime | `SHOW TBLPROPERTIES` trên bảng Iceberg sẵn có | *chưa có* |
 
 Bảng tương thích Sedona: https://sedona.apache.org/latest/setup/maven-coordinates/
 
-Đối chiếu nhanh cho Spark 3.5 / Scala 2.12, nếu cụm là bản đó:
+### Toạ độ gói cho Spark 3.5 / Scala 2.12
+
+Cả ba đều có trên Maven Central và đã chạy được trên máy (mục A):
 
 ```
 org.apache.sedona:sedona-spark-shaded-3.5_2.12:1.9.1
 org.datasyslab:geotools-wrapper:1.9.1-33.5
 org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.11.0
 ```
+
+### Ràng buộc Java — phải hỏi trước khi chọn gói
+
+Đo phiên bản bytecode trong jar (major 55 = Java 11, 61 = Java 17):
+
+| Gói | Java tối thiểu |
+|---|---|
+| `sedona-spark-shaded-3.5_2.12:1.9.1` | 11 |
+| `geotools-wrapper:1.9.1-33.5` | 11 |
+| `iceberg-spark-runtime-3.5_2.12:1.11.0` | **17** |
+| `iceberg-spark-runtime-3.5_2.12:1.10.1` trở xuống | 11 |
+
+- **Java 17:** dùng nguyên bộ trên.
+- **Java 11:** Iceberg phải ≤ 1.10.1.
+- **Java 8:** Spark 3.5 vẫn chạy, nhưng **Sedona 1.9.1 thì không**. Phải tìm
+  bản Sedona cũ hơn còn biên dịch cho Java 8, hoặc xem lại hướng thiết kế.
+
+Iceberg nên lấy **đúng bản cụm đang dùng** cho các bảng sẵn có, không tự
+mang bản riêng vào.
+
+### Ràng buộc Python
+
+PySpark 3.5.3 chỉ khai báo hỗ trợ Python 3.8–3.11, và còn
+`from distutils.version import LooseVersion` — module đã bị gỡ khỏi Python 3.12.
+Venv trên cụm phải là **≤ 3.11**.
 
 Kết quả chạy `scripts/sedona_smoke_test.py` trên cụm: *chưa chạy*
 
